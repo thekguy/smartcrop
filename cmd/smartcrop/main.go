@@ -32,37 +32,23 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"os"
+	"bufio"
 
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 )
 
 func main() {
-	input := flag.String("input", "", "input filename")
 	output := flag.String("output", "", "output filename")
 	w := flag.Int("width", 0, "crop width")
 	h := flag.Int("height", 0, "crop height")
 	resize := flag.Bool("resize", true, "resize after cropping")
-	quality := flag.Int("quality", 85, "jpeg quality")
 	flag.Parse()
 
-	if *input == "" {
-		fmt.Fprintln(os.Stderr, "No input file given")
-		os.Exit(1)
-	}
-
-	f, err := os.Open(*input)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "can't open input file: %v\n", err)
-		os.Exit(1)
-	}
-	defer f.Close() //nolint:errcheck // read-only file
-
-	img, format, err := image.Decode(f)
+	f := bufio.NewReader(os.Stdin)
+	img, _, err := image.Decode(f)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "can't decode input file: %v\n", err)
 		os.Exit(1)
@@ -80,38 +66,16 @@ func main() {
 		}
 	}
 
-	img = crop(img, *w, *h, *resize)
-	switch format {
-	case "png":
-		err = png.Encode(fOut, img)
-	case "jpeg":
-		err = jpeg.Encode(fOut, img, &jpeg.Options{Quality: *quality})
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "can't encode image: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := fOut.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "can't create output file: %v\n", err)
-		os.Exit(1)
-	}
+	fmt.Fprintf(os.Stdout, crop(img, *w, *h, *resize).String())
 }
 
-func crop(img image.Image, w, h int, resize bool) image.Image {
+func crop(img image.Image, w, h int, resize bool) image.Rectangle {
 	width, height := getCropDimensions(img, w, h)
 	resizer := nfnt.NewDefaultResizer()
 	analyzer := smartcrop.NewAnalyzer(resizer)
 	topCrop, _ := analyzer.FindBestCrop(img, width, height)
 
-	type SubImager interface {
-		SubImage(r image.Rectangle) image.Image
-	}
-	img = img.(SubImager).SubImage(topCrop)
-	if resize && (img.Bounds().Dx() != width || img.Bounds().Dy() != height) {
-		img = resizer.Resize(img, uint(width), uint(height))
-	}
-	return img
+	return topCrop
 }
 
 func getCropDimensions(img image.Image, width, height int) (int, int) {
