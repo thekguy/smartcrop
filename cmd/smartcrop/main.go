@@ -32,7 +32,6 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"io"
 	"os"
 	"bufio"
 
@@ -41,7 +40,6 @@ import (
 )
 
 func main() {
-	output := flag.String("output", "", "output filename")
 	w := flag.Int("width", 0, "crop width")
 	h := flag.Int("height", 0, "crop height")
 	resize := flag.Bool("resize", true, "resize after cropping")
@@ -52,18 +50,6 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "can't decode input file: %v\n", err)
 		os.Exit(1)
-	}
-
-	out := *output
-	var fOut io.WriteCloser
-	if out == "-" {
-		fOut = os.Stdout
-	} else {
-		fOut, err = os.Create(out)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "can't create output file: %v\n", err)
-			os.Exit(1)
-		}
 	}
 
 	fmt.Fprintf(os.Stdout, crop(img, *w, *h, *resize).String())
