@@ -1,4 +1,4 @@
-module github.com/muesli/smartcrop
+module github.com/thekguy/smartcrop
 
 go 1.12
 
