@@ -40,6 +40,7 @@ import (
 )
 
 func main() {
+  _ = flag.String("output", "", "output filename")
 	w := flag.Int("width", 0, "crop width")
 	h := flag.Int("height", 0, "crop height")
 	resize := flag.Bool("resize", true, "resize after cropping")
